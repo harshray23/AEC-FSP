@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart3, Download, Filter, AlertCircle, Loader2 } from "lucide-react";
-import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -105,14 +104,6 @@ export default function TeacherViewReportsPage() {
     return attendanceByBatchData.filter(d => d.batchId === selectedBatchFilter);
   }, [attendanceByBatchData, selectedBatchFilter]);
 
-  const chartData = useMemo(() => {
-    if (reportType === "attendance-batch") {
-      return filteredAttendanceData.map(d => ({ name: d.batchName, Present: d.present, Absent: d.absent, Late: d.late }));
-    }
-    return [];
-  }, [reportType, filteredAttendanceData]);
-
-
   const exportToExcel = (data: any[], fileName: string) => {
     if (data.length === 0) {
       toast({ title: "No Data", description: "There is no data to export for the selected filters.", variant: "destructive" });
@@ -192,18 +183,7 @@ export default function TeacherViewReportsPage() {
           <CardContent>
             {filteredAttendanceData.length > 0 ? (
               <>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="Present" fill="hsl(var(--chart-2))" stackId="a" />
-                    <Bar dataKey="Absent" fill="hsl(var(--chart-1))" stackId="a" />
-                    <Bar dataKey="Late" fill="hsl(var(--chart-4))" stackId="a" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="h-[300px] w-full text-muted-foreground flex items-center justify-center">Chart library removed, visualization unavailable.</div>
                 <Table className="mt-4">
                   <TableHeader><TableRow><TableHead>Batch</TableHead><TableHead>Total Students</TableHead><TableHead>Present</TableHead><TableHead>Absent</TableHead><TableHead>Late</TableHead><TableHead>Present (%)</TableHead></TableRow></TableHeader>
                   <TableBody>

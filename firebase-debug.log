@@ -2239,3 +2239,38 @@ io.netty.handler.codec.http2.Http2Exception: HTTP/2 client preface string missin
 	at java.base/java.lang.Thread.run(Thread.java:1583)
 
  {"metadata":{"emulator":{"name":"firestore"},"message":"Dec 23, 2025 7:40:13 AM io.grpc.netty.NettyServerTransport notifyTerminated\nINFO: Transport failed\nio.netty.handler.codec.http2.Http2Exception: HTTP/2 client preface string missing or corrupt. Hex dump for received bytes: 16030105a8010005a40303aaa85af8026944fb1bbee2e12e\n\tat io.netty.handler.codec.http2.Http2Exception.connectionError(Http2Exception.java:107)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.readClientPrefaceString(Http2ConnectionHandler.java:319)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.decode(Http2ConnectionHandler.java:245)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler.decode(Http2ConnectionHandler.java:451)\n\tat io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530)\n\tat io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469)\n\tat io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)\n\tat io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)\n\tat io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1407)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)\n\tat io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:918)\n\tat io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:788)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)\n\tat io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)\n\tat io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:994)\n\tat io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)\n\tat io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\n\n"}}
+[debug] [2026-01-15T08:14:07.643Z] ----------------------------------------------------------------------
+[debug] [2026-01-15T08:14:07.646Z] Command:       /nix/store/ws50yvm6vzlzf7jzz6n7xh4szddrack1-nodejs-20.19.1/bin/node /home/user/.global_modules/bin/firebase init
+[debug] [2026-01-15T08:14:07.647Z] CLI Version:   14.12.0
+[debug] [2026-01-15T08:14:07.647Z] Platform:      linux
+[debug] [2026-01-15T08:14:07.647Z] Node Version:  v20.19.1
+[debug] [2026-01-15T08:14:07.647Z] Time:          Thu Jan 15 2026 08:14:07 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-01-15T08:14:07.648Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-15T08:14:08.285Z] Checked if tokens are valid: false, expires at: 1754899077071
+[debug] [2026-01-15T08:14:08.285Z] Checked if tokens are valid: false, expires at: 1754899077071
+[debug] [2026-01-15T08:14:08.286Z] > refreshing access token with scopes: []
+[debug] [2026-01-15T08:14:08.290Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-15T08:14:08.290Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-15T08:14:08.486Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-01-15T08:14:08.487Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-15T08:14:08.531Z] >>> [apiv2][query] GET https://monospace-pa.googleapis.com/v1/workspaces/studio-6317169159 [none]
+[debug] [2026-01-15T08:14:09.381Z] <<< [apiv2][status] GET https://monospace-pa.googleapis.com/v1/workspaces/studio-6317169159 200
+[debug] [2026-01-15T08:14:09.384Z] <<< [apiv2][body] GET https://monospace-pa.googleapis.com/v1/workspaces/studio-6317169159 {"workspaceId":"studio-6317169159","name":"AEC FSP Portal","workspaceRedirectUrl":"firebase-studio-1748625231387.cluster-fkltigo73ncaixtmokrzxhwsfc.cloudworkstations.dev","status":"WORKSPACE_STATUS_RUNNING","lastAccessDatetime":"2026-01-15T08:01:33.460237Z","workspaceTemplate":"WORKSPACE_TEMPLATE_CAPRA_BUILDER","owner":"SELF","serviceAccountEmail":"msp-2415641487801030889@monospace-per-ws-sa-8.iam.gserviceaccount.com","ownerEmail":"harshray2007@gmail.com","workspaceImageUrl":"https://www.gstatic.com/monospace/250314/workspace-prototype-192.png","templateArgs":"{}","templateRepoUrl":"file:///usr/local/monospace/templates/private/_capra_next","workstationAccessToken":"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2Nsb3VkLmdvb2dsZS5jb20vd29ya3N0YXRpb25zIiwiYXVkIjoiZmlyZWJhc2Utc3R1ZGlvLTE3NDg2MjUyMzEzODcuY2x1c3Rlci1ma2x0aWdvNzNuY2FpeHRtb2tyenhod3NmYy5jbG91ZHdvcmtzdGF0aW9ucy5kZXYiLCJpYXQiOjE3Njg0NjQ4NDksImV4cCI6MTc2ODU1MTI0OX0.HeOGXjZU7apPlS8Q9BsFAJtp1IhdFl3O0GV9SHatX63YTY19OFAKVke0jyK9bG6Hwm1UWE3HJsqfDcnuYVTgcWS5N38KapVoZs27aTytLRPI2KQdH8gJQNss_3rHRqv5ztffVUjsoqYUa7VZLbbGWFwnYMd48unyZABg-o0MMhwfYWJSUNFPCJtpQXT8zOIBXURqgl7bS5xM5R7yJ62tXXZzDbMMQ6bi67pSWXzzXu9DkVyHYVBEP-PoBoUxHBsgqeuK710fQuoWjB1qvoAqEJBQ6lXWo17gnVe1MH5wF0nQd4lPsRYANdJZavxOXaH_rTWwb8kz6sdh1KOBAs16MA","firebaseProjectId":"aec-fsp-portal-whfua"}
+[debug] [2026-01-15T08:14:09.386Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-15T08:14:09.394Z] > authorizing via signed-in user (harshray2007@gmail.com)
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/user/studio
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+

@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart3, Clock, User, Shield, Briefcase, GraduationCap, Loader2 } from "lucide-react";
 import type { ActivityLog } from '@/lib/types';
-import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
 import { format, subDays, eachDayOfInterval } from "date-fns";
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -50,30 +49,6 @@ export default function ActivityMonitorPage() {
     fetchActivities();
   }, [toast]);
 
-  const activityByDay = useMemo(() => {
-    const interval = eachDayOfInterval({
-      start: subDays(new Date(), 29),
-      end: new Date()
-    });
-
-    const dailyCounts = new Map<string, number>();
-    interval.forEach(day => {
-      dailyCounts.set(format(day, "yyyy-MM-dd"), 0);
-    });
-
-    activities.forEach(activity => {
-      const day = format(new Date(activity.timestamp), "yyyy-MM-dd");
-      if (dailyCounts.has(day)) {
-        dailyCounts.set(day, dailyCounts.get(day)! + 1);
-      }
-    });
-
-    return Array.from(dailyCounts.entries()).map(([date, count]) => ({
-      date: format(new Date(date.replace(/-/g, '/')), "dd MMM"), // Use replace for better Safari compatibility
-      activities: count
-    }));
-  }, [activities]);
-
   return (
     <div className="space-y-8">
       <PageHeader
@@ -91,21 +66,7 @@ export default function ActivityMonitorPage() {
           {isLoading ? (
             <div className="flex justify-center items-center h-[300px]"><Loader2 className="h-8 w-8 animate-spin" /></div>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={activityByDay}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--background))',
-                    borderColor: 'hsl(var(--border))'
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="activities" fill="hsl(var(--primary))" name="Activities" />
-              </BarChart>
-            </ResponsiveContainer>
+             <div className="h-[300px] w-full text-muted-foreground flex items-center justify-center">Chart library removed, visualization unavailable.</div>
           )}
         </CardContent>
       </Card>

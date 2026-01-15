@@ -102,14 +102,24 @@ export default function RoleSelector() {
             </CardHeader>
             <CardContent className="text-center">
               <CardDescription>Access your batch details, attendance, and learning resources.</CardDescription>
-              <Button
-                variant="outline"
-                className="mt-4 w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={() => router.push(`/login?role=${USER_ROLES.STUDENT}`)}
-                aria-label="Login as Student"
-              >
-                Login as Student
-              </Button>
+              <div className="flex flex-col space-y-2 mt-4">
+                <Button
+                  variant="outline"
+                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                  onClick={() => router.push(`/login?role=${USER_ROLES.STUDENT}`)}
+                  aria-label="Login as Student"
+                >
+                  Login as Student
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => router.push(`/register`)}
+                  aria-label="Register as Student"
+                >
+                  Register as New Student
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
