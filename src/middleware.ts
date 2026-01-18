@@ -1,6 +1,11 @@
 // src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { verifySession } from '@/lib/auth';
+import { db } from '@/lib/firebaseAdmin';
+
+// Force Node.js runtime instead of Edge to use Firebase Admin SDK
+export const runtime = 'nodejs';
 
 const PROTECTED_ROUTES = {
   '/admin': 'admin',
@@ -12,47 +17,48 @@ const PROTECTED_ROUTES = {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const sessionCookie = req.cookies.get('session')?.value;
-  const absoluteUrl = req.nextUrl.clone();
-
-  // Define the base URL based on the environment
-  const baseUrl = process.env.NODE_ENV === 'production' 
-    ? absoluteUrl.origin 
-    : 'http://localhost:3000';
-
-  const verificationUrl = `${baseUrl}/api/auth/verify-session`;
 
   // Determine if the current path is a protected route
   const protectedPath = Object.keys(PROTECTED_ROUTES).find(p => pathname.startsWith(p));
 
   if (protectedPath) {
+    const expectedRole = PROTECTED_ROUTES[protectedPath as keyof typeof PROTECTED_ROUTES];
+    const loginUrl = new URL(`/login?role=${expectedRole}`, req.url);
+
     if (!sessionCookie) {
-      const role = PROTECTED_ROUTES[protectedPath as keyof typeof PROTECTED_ROUTES];
-      const loginUrl = new URL(`/login?role=${role}`, req.url);
       return NextResponse.redirect(loginUrl);
     }
 
     try {
-      // Verify session by calling the internal API route
-      const response = await fetch(verificationUrl, {
-        headers: {
-          'Cookie': `session=${sessionCookie}`,
-        },
-      });
+      const decodedClaims = await verifySession(sessionCookie);
 
-      if (!response.ok) {
-        throw new Error('Session verification failed.');
+      if (!decodedClaims) {
+        throw new Error('Session verification failed, no claims found.');
       }
       
-      const { user } = await response.json();
-
-      if (!user) {
-        throw new Error('Invalid user data in session.');
+      // Fetch user profile from Firestore to verify the role from a trusted source
+      let userProfile = null;
+      if (db) {
+          // Check all possible user collections
+          const collections = ['students', 'teachers', 'admins', 'hosts'];
+          for (const collection of collections) {
+              const docRef = db.collection(collection).doc(decodedClaims.uid);
+              const doc = await docRef.get();
+              if (doc.exists) {
+                  userProfile = doc.data();
+                  break;
+              }
+          }
+      } else {
+          throw new Error('Database connection is not available in middleware.');
       }
-      
-      const expectedRole = PROTECTED_ROUTES[protectedPath as keyof typeof PROTECTED_ROUTES];
 
-      if (user.role !== expectedRole) {
-        // If roles don't match, redirect to the root page.
+      if (!userProfile) {
+        throw new Error(`User profile not found in database for UID: ${decodedClaims.uid}`);
+      }
+
+      if (userProfile.role !== expectedRole) {
+        // If roles don't match, redirect to the root page. This prevents a student from accessing an admin URL.
         return NextResponse.redirect(new URL('/', req.url));
       }
 
@@ -61,12 +67,9 @@ export async function middleware(req: NextRequest) {
 
     } catch (error) {
       // Any error in verification means the session is invalid.
-      // Clear the cookie and redirect to login.
-      console.error('Middleware error:', error);
-      const role = PROTECTED_ROUTES[protectedPath as keyof typeof PROTECTED_ROUTES];
-      const loginUrl = new URL(`/login?role=${role}`, req.url);
+      console.error('Middleware verification error:', error);
+      // Clear the invalid cookie and redirect to login.
       const res = NextResponse.redirect(loginUrl);
-      // Advise the browser to clear the session cookie
       res.cookies.set('session', '', { maxAge: -1, path: '/' });
       return res;
     }

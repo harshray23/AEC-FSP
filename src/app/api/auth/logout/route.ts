@@ -1,11 +1,11 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+const SESSION_COOKIE_NAME = "session";
+
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = cookies();
-    cookieStore.delete('session');
+    cookies().delete(SESSION_COOKIE_NAME);
     return NextResponse.json({ message: 'Successfully logged out' });
   } catch (error) {
     console.error("Logout error:", error);
