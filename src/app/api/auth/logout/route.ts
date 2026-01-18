@@ -1,5 +1,4 @@
 
-import { deleteSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 

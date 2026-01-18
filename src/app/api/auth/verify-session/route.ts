@@ -5,7 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
-    const decodedClaims = await verifySession(req as any); //TODO: fix type
+    const sessionCookie = req.cookies.get('session')?.value || '';
+    const decodedClaims = await verifySession(sessionCookie);
 
     if (!decodedClaims) {
       return NextResponse.json({ message: 'Unauthorized: No valid session found.' }, { status: 401 });
