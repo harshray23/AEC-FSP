@@ -1,10 +1,8 @@
 
-import StudentRegistrationForm from "@/components/auth/StudentRegistrationForm";
+import { redirect } from "next/navigation";
 
 export default function RegisterPage() {
-  return <StudentRegistrationForm />;
+  // Registration is disabled per user request
+  redirect("/");
+  return null;
 }
-
-export const metadata = {
-  title: "Student Registration - AEC FSP",
-};
