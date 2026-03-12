@@ -1,9 +1,11 @@
+
 "use client";
 
 import React from 'react';
 import Lottie from "lottie-react";
 import { cn } from '@/lib/utils';
 
+// Inline animation data to avoid missing file errors
 const loadingAnimation = {
   "v": "5.5.7",
   "fr": 60,

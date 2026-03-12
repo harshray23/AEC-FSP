@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     if (!auth) {
       return NextResponse.json({ 
-        message: 'Firebase Admin Auth is not initialized. Please ensure your Firebase service account credentials (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) are correctly set in your environment.' 
+        message: 'Backend Authentication Service is unavailable. Please ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set.' 
       }, { status: 500 });
     }
 
