@@ -76,15 +76,8 @@ export default function LoginForm() {
       });
       
       if (!sessionResponse.ok) {
-          const errorText = await sessionResponse.text();
-          let errorMessage = "Failed to create a server-side session.";
-          try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.message || errorMessage;
-          } catch (e) {
-              errorMessage = errorText || errorMessage;
-          }
-          throw new Error(errorMessage);
+          const errorData = await sessionResponse.json().catch(() => ({}));
+          throw new Error(errorData.message || "Failed to create a server-side session.");
       }
 
       let profileApiUrl: string;

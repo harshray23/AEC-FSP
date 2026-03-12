@@ -15,8 +15,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (!auth) {
+      console.error("Firebase Admin Auth not initialized. Check your environment variables.");
       return NextResponse.json({ 
-        message: 'Backend Authentication Service is unavailable. Please ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set.' 
+        message: 'Backend Authentication Service is unavailable. Please ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are correctly set in the environment.' 
       }, { status: 500 });
     }
 
