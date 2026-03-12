@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/shared/AppLogo";
 import { GraduationCap, Briefcase, UserCog, UserRound, Code } from "lucide-react"; 
 import { USER_ROLES, type UserRole } from "@/lib/constants";
-import Image from "next/image";
 
 interface RoleCardProps {
   role: UserRole;
@@ -50,14 +49,15 @@ function RoleCard({ role, title, description, icon, onSelect }: RoleCardProps) {
 export default function RoleSelector() {
   const router = useRouter();
 
-  const handleNonStudentRoleSelect = (role: UserRole) => {
+  const handleRoleSelect = (role: UserRole) => {
     router.push(`/login?role=${role}`);
   };
 
   return (
     <div 
       className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-cover bg-center"
-      style={{ backgroundImage: "url('/bg.jpg')" }}
+      style={{ backgroundImage: "url('https://picsum.photos/seed/aec/1920/1080')" }}
+      data-ai-hint="college campus"
     >
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/50 z-0" />
@@ -80,7 +80,7 @@ export default function RoleSelector() {
         
         <div className="text-center mb-12">
           <div className="flex justify-center items-center gap-4 mb-4">
-            <AppLogo src="/logo1.avif" width="80" height="80" />
+            <AppLogo width={80} height={80} />
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-white">
             AEC FSP
@@ -92,36 +92,14 @@ export default function RoleSelector() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-          {/* Student Card with explicit Login and Register options */}
-          <Card className="w-full md:w-72 hover:shadow-lg transition-shadow duration-300 hover:border-primary bg-background/80 backdrop-blur-sm">
-            <CardHeader className="items-center text-center">
-              <div className="p-3 rounded-full bg-primary/10 text-primary mb-2">
-                <GraduationCap className="w-10 h-10" />
-              </div>
-              <CardTitle className="text-2xl">Student</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <CardDescription>Access your batch details, attendance, and learning resources.</CardDescription>
-              <div className="flex flex-col space-y-2 mt-4">
-                <Button
-                  variant="outline"
-                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                  onClick={() => router.push(`/login?role=${USER_ROLES.STUDENT}`)}
-                  aria-label="Login as Student"
-                >
-                  Login as Student
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={() => router.push(`/register`)}
-                  aria-label="Register as Student"
-                >
-                  Register as New Student
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Student Card */}
+          <RoleCard
+            role={USER_ROLES.STUDENT}
+            title="Student"
+            description="Access your batch details, attendance, and learning resources."
+            icon={<GraduationCap className="w-10 h-10" />}
+            onSelect={handleRoleSelect}
+          />
 
           {/* Teacher Card */}
           <RoleCard
@@ -129,7 +107,7 @@ export default function RoleSelector() {
             title="Teacher"
             description="Manage batches, track student attendance, and update timetables."
             icon={<Briefcase className="w-10 h-10" />}
-            onSelect={handleNonStudentRoleSelect}
+            onSelect={handleRoleSelect}
           />
           {/* Admin Card */}
           <RoleCard
@@ -137,7 +115,7 @@ export default function RoleSelector() {
             title="Admin"
             description="Oversee the program, manage users, and view system-wide reports."
             icon={<UserCog className="w-10 h-10" />}
-            onSelect={handleNonStudentRoleSelect}
+            onSelect={handleRoleSelect}
           />
         </div>
         
