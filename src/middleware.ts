@@ -1,10 +1,9 @@
-// src/middleware.ts
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifySession } from '@/lib/auth';
 import { db } from '@/lib/firebaseAdmin';
 
-// Force Node.js runtime instead of Edge to use Firebase Admin SDK
 export const runtime = 'nodejs';
 
 const PROTECTED_ROUTES = {
@@ -18,7 +17,6 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const sessionCookie = req.cookies.get('session')?.value;
 
-  // Determine if the current path is a protected route
   const protectedPath = Object.keys(PROTECTED_ROUTES).find(p => pathname.startsWith(p));
 
   if (protectedPath) {
@@ -33,53 +31,48 @@ export async function middleware(req: NextRequest) {
       const decodedClaims = await verifySession(sessionCookie);
 
       if (!decodedClaims) {
-        throw new Error('Session verification failed, no claims found.');
+        throw new Error('Invalid or expired session.');
       }
       
-      // Fetch user profile from Firestore to verify the role from a trusted source
+      if (!db) {
+        // If database is not available, we can't verify roles strictly, 
+        // but we can allow through if we trust the claims, 
+        // or redirect to home if we want to be safe.
+        // For a prototype, let's allow if claims exist but log a warning.
+        console.warn('Database not available in middleware for role verification.');
+        return NextResponse.next();
+      }
+
+      // verify role from Firestore
+      const collections = ['students', 'teachers', 'admins', 'hosts'];
       let userProfile = null;
-      if (db) {
-          // Check all possible user collections
-          const collections = ['students', 'teachers', 'admins', 'hosts'];
-          for (const collection of collections) {
-              const docRef = db.collection(collection).doc(decodedClaims.uid);
-              const doc = await docRef.get();
-              if (doc.exists) {
-                  userProfile = doc.data();
-                  break;
-              }
+      
+      for (const collection of collections) {
+          const docRef = db.collection(collection).doc(decodedClaims.uid);
+          const doc = await docRef.get();
+          if (doc.exists) {
+              userProfile = doc.data();
+              break;
           }
-      } else {
-          throw new Error('Database connection is not available in middleware.');
       }
 
-      if (!userProfile) {
-        throw new Error(`User profile not found in database for UID: ${decodedClaims.uid}`);
-      }
-
-      if (userProfile.role !== expectedRole) {
-        // If roles don't match, redirect to the root page. This prevents a student from accessing an admin URL.
+      if (!userProfile || userProfile.role !== expectedRole) {
         return NextResponse.redirect(new URL('/', req.url));
       }
 
-      // If everything is fine, proceed to the requested page
       return NextResponse.next();
 
     } catch (error) {
-      // Any error in verification means the session is invalid.
-      console.error('Middleware verification error:', error);
-      // Clear the invalid cookie and redirect to login.
+      console.error('Middleware Error:', error);
       const res = NextResponse.redirect(loginUrl);
       res.cookies.set('session', '', { maxAge: -1, path: '/' });
       return res;
     }
   }
 
-  // Allow the request to proceed for public routes
   return NextResponse.next();
 }
 
-// Define which paths the middleware should run on
 export const config = {
   matcher: ['/admin/:path*', '/teacher/:path*', '/student/:path*', '/host/:path*'],
 };

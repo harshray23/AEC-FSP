@@ -7,7 +7,7 @@ import * as z from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react"; 
-import { getAuth, signInWithEmailAndPassword, type User as FirebaseUser } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { app as firebaseApp } from "@/firebase";
 
 import { Button } from "@/components/ui/button";
@@ -64,7 +64,20 @@ export default function LoginForm() {
       const firebaseUser = userCredential.user;
 
       if (!firebaseUser) {
-        throw new Error("Firebase authentication succeeded but user object is null.");
+        throw new Error("Authentication succeeded but no user was found.");
+      }
+
+      // Create server-side session
+      const idToken = await firebaseUser.getIdToken();
+      const sessionResponse = await fetch('/api/auth/session-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+      
+      if (!sessionResponse.ok) {
+          const errorData = await sessionResponse.json().catch(() => ({ message: "Failed to create a server-side session." }));
+          throw new Error(errorData.message);
       }
 
       let profileApiUrl: string;
@@ -88,33 +101,21 @@ export default function LoginForm() {
           successRedirectPath = "/host/dashboard";
           break;
         default:
-          throw new Error("Invalid role for profile fetching.");
-      }
-      
-      const sessionResponse = await fetch('/api/auth/session-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken: await firebaseUser.getIdToken() }),
-      });
-      
-      if (!sessionResponse.ok) {
-          throw new Error("Failed to create a server-side session.");
+          throw new Error("Invalid role selection.");
       }
 
       const profileRes = await fetch(profileApiUrl);
 
       if (!profileRes.ok) {
-        await auth.signOut(); 
-        const errorData = await profileRes.json().catch(() => ({ message: `Your account profile could not be found for role '${role}'. It may be pending approval or inactive.` }));
+        const errorData = await profileRes.json().catch(() => ({ message: `Account profile not found for role '${role}'.` }));
         throw new Error(errorData.message);
       }
       
       const firestoreProfile: Teacher | Admin | Host = await profileRes.json();
       
       if (firestoreProfile.status && firestoreProfile.status !== 'active') {
-        await auth.signOut();
         const statusMessage = firestoreProfile.status.replace("_", " ");
-        throw new Error(`Your account status is '${statusMessage}'. You cannot log in.`);
+        throw new Error(`Your account status is '${statusMessage}'. Login is currently disabled.`);
       }
 
       const finalUserData = {
@@ -129,34 +130,17 @@ export default function LoginForm() {
       
       toast({
         title: "Login Successful!",
-        description: `Welcome back, ${finalUserData.name || 'User'}! Redirecting...`,
+        description: `Welcome back, ${finalUserData.name || 'User'}!`,
       });
 
       setIsLoginSuccess(true);
       router.push(successRedirectPath);
 
     } catch (error: any) {
-      console.error("Login/Profile Fetch error:", error);
-      let errorMessage = "Login failed. Please check your credentials.";
-      if (error.code) { // Firebase Auth error codes
-        switch (error.code) {
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-          case 'auth/invalid-credential':
-            errorMessage = "Invalid email or password.";
-            break;
-          case 'auth/invalid-email':
-            errorMessage = "The email address is not valid.";
-            break;
-          default:
-            errorMessage = error.message || "An unexpected error occurred.";
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      console.error("Login Error:", error);
       toast({
         title: "Login Failed",
-        description: errorMessage,
+        description: error.message || "An unexpected error occurred. Please check your credentials and try again.",
         variant: "destructive",
       });
     }
@@ -174,9 +158,7 @@ export default function LoginForm() {
     );
   }
 
-  if (!role) {
-     return <p>Invalid role. Redirecting...</p>;
-  }
+  if (!role) return null;
 
   let roleTitle = role.charAt(0).toUpperCase() + role.slice(1);
   if (role === USER_ROLES.HOST) {
