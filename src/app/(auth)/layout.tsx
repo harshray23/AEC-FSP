@@ -13,7 +13,7 @@ export default function AuthLayout({
   return (
     <div 
       className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-cover bg-center"
-      style={{ backgroundImage: "url('https://picsum.photos/seed/aec/1920/1080')" }}
+      style={{ backgroundImage: "url('/bg.jpg')" }}
     >
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/50 z-0" />

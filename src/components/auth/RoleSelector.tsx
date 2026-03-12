@@ -56,7 +56,7 @@ export default function RoleSelector() {
   return (
     <div 
       className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-cover bg-center"
-      style={{ backgroundImage: "url('https://picsum.photos/seed/aec/1920/1080')" }}
+      style={{ backgroundImage: "url('/bg.jpg')" }}
       data-ai-hint="college campus"
     >
       {/* Overlay */}

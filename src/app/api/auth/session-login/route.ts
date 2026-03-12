@@ -15,9 +15,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (!auth) {
-      console.error("Firebase Admin Auth not initialized. Check your environment variables.");
+      console.error("Firebase Admin Auth not initialized.");
       return NextResponse.json({ 
-        message: 'Backend Authentication Service is unavailable. Please ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are correctly set in the environment.' 
+        message: 'Backend Authentication Service is unavailable. Please check your server environment variables.' 
       }, { status: 500 });
     }
 
@@ -25,13 +25,11 @@ export async function POST(req: NextRequest) {
     const isProd = process.env.NODE_ENV === "production";
     
     const cookieStore = cookies();
-    cookieStore.set({
-      name: SESSION_COOKIE_NAME,
-      value: sessionCookie,
+    cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, {
       httpOnly: true,
       maxAge: expiresIn / 1000,
       path: "/",
-      sameSite: "Lax" as const,
+      sameSite: "lax",
       secure: isProd,
     });
     
