@@ -1,5 +1,6 @@
 
 // Your web app's Firebase configuration
+// The apiKey is provided by the user. Other values are derived from environment variables or sensible defaults.
 const firebaseConfig = {
   apiKey: "AIzaSyDyqnjYWu8dnHAzLYcqyjpLDWZNlA_txN0",
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "aec-fsp.firebaseapp.com",

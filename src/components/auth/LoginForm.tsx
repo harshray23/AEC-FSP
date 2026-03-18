@@ -107,50 +107,48 @@ export default function LoginForm() {
 
       let firestoreProfile: any = null;
       try {
+        // Try the backend API first
         const profileRes = await fetch(profileApiUrl);
         
         if (profileRes.ok) {
           firestoreProfile = await profileRes.json();
         } else {
-          const errorData = await profileRes.json().catch(() => ({}));
+          // Fallback to client-side Firestore if the API fails
+          const collectionMap = {
+            [USER_ROLES.STUDENT]: 'students',
+            [USER_ROLES.TEACHER]: 'teachers',
+            [USER_ROLES.ADMIN]: 'admins',
+            [USER_ROLES.HOST]: 'hosts',
+          };
+          const collectionName = collectionMap[role as keyof typeof collectionMap];
           
-          // FALLBACK: If server-side DB is not initialized (missing Admin SDK env vars),
-          // try fetching the profile using the client-side SDK directly.
-          if (errorData.message?.includes('Database connection not initialized') || profileRes.status === 500) {
-            console.warn("Backend DB unavailable. Attempting client-side fallback for profile fetch.");
-            
-            const collectionMap = {
-              [USER_ROLES.STUDENT]: 'students',
-              [USER_ROLES.TEACHER]: 'teachers',
-              [USER_ROLES.ADMIN]: 'admins',
-              [USER_ROLES.HOST]: 'hosts',
-            };
-            const collectionName = collectionMap[role as keyof typeof collectionMap];
-            
-            // Try fetch by document ID (UID)
-            const docRef = doc(clientDb, collectionName, firebaseUser.uid);
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-              firestoreProfile = { id: docSnap.id, ...docSnap.data() };
-            } else {
-              // Try query by email as backup
-              const q = query(collection(clientDb, collectionName), where("email", "==", firebaseUser.email));
-              const qSnap = await getDocs(q);
-              if (!qSnap.empty) {
-                firestoreProfile = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() };
-              }
+          const docRef = doc(clientDb, collectionName, firebaseUser.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            firestoreProfile = { id: docSnap.id, ...docSnap.data() };
+          } else {
+            // Backup: Try querying by email
+            const q = query(collection(clientDb, collectionName), where("email", "==", firebaseUser.email));
+            const qSnap = await getDocs(q);
+            if (!qSnap.empty) {
+              firestoreProfile = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() };
             }
-          }
-          
-          if (!firestoreProfile) {
-            throw new Error(errorData.message || `Account profile not found for role '${role}'.`);
           }
         }
       } catch (profileErr: any) {
-        throw new Error(profileErr.message || "Failed to retrieve user profile.");
+        console.error("Profile Fetch Error:", profileErr);
+        // If it's specifically an offline error, provide a helpful message
+        if (profileErr.message?.includes('offline')) {
+          throw new Error("Cloud connectivity issue: The Firestore client could not reach the server. Please check your project ID and network settings.");
+        }
+        throw new Error(profileErr.message || "Failed to retrieve your account profile.");
       }
       
+      if (!firestoreProfile) {
+        throw new Error(`Profile not found for ${values.email} as ${role}. Please ensure you are logging in with the correct role.`);
+      }
+
       if (firestoreProfile.status && firestoreProfile.status !== 'active') {
         const statusMessage = firestoreProfile.status.replace("_", " ");
         throw new Error(`Your account status is '${statusMessage}'. Login is currently disabled.`);
