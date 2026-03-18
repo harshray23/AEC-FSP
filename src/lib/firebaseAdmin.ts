@@ -12,13 +12,12 @@ try {
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
     if (!projectId || !clientEmail || !privateKey) {
-      console.warn("Firebase Admin SDK credentials (PROJECT_ID, CLIENT_EMAIL, or PRIVATE_KEY) are missing from environment variables.");
+      console.warn("CRITICAL: Firebase Admin SDK credentials (PROJECT_ID, CLIENT_EMAIL, or PRIVATE_KEY) are missing. Session cookies and middleware role verification will be disabled.");
     } else {
       admin.initializeApp({
         credential: admin.credential.cert({
           projectId: projectId,
           clientEmail: clientEmail,
-          // Handle potential newlines in the private key from environment variables
           privateKey: privateKey.replace(/\\n/g, '\n'),
         }),
       });
@@ -31,7 +30,7 @@ try {
     auth = admin.auth();
   }
 } catch (error: any) {
-  console.error("CRITICAL: Firebase Admin SDK setup failed:", error.message);
+  console.error("CRITICAL ERROR: Firebase Admin SDK setup failed:", error.message);
   db = undefined;
   auth = undefined;
 }
