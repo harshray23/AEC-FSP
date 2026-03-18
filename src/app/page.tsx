@@ -13,11 +13,10 @@ export default function RootPage() {
     if (typeof window !== 'undefined') {
       const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 3000); // Show splash for 3 seconds
+      }, 2500); 
 
       return () => clearTimeout(timer);
     } else {
-        // If on the server, don't show the splash screen
         setIsLoading(false);
     }
   }, []);
@@ -26,5 +25,12 @@ export default function RootPage() {
     return <SplashTransition />;
   }
   
-  return <RoleSelector />;
+  return (
+    <main 
+      className="min-h-screen bg-cover bg-center"
+      style={{ backgroundImage: "url('/bg.jpg')" }}
+    >
+      <RoleSelector />
+    </main>
+  );
 }

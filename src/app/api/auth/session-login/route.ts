@@ -15,8 +15,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!auth) {
-      // In development/prototype environments, we log a warning but don't crash.
-      // This allows the client-side login (which is already successful) to proceed.
+      // Allow the client-side login to proceed even if backend session creation is skipped
       console.warn("Firebase Admin Auth not initialized. Skipping session cookie creation.");
       return NextResponse.json({ 
         message: 'Session cookie skipped: Backend Auth not initialized.',
@@ -39,8 +38,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Session created successfully.' });
   } catch (error: any) {
     console.error('Session login error:', error);
+    // Return a 200 with a warning instead of a 500 to prevent blocking the login UI
     return NextResponse.json({ 
-      message: error.message || 'An unexpected error occurred while creating the session.' 
-    }, { status: 500 });
+      message: error.message || 'Could not create session cookie.',
+      warning: true 
+    }, { status: 200 });
   }
 }

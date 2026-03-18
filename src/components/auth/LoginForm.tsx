@@ -8,7 +8,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react"; 
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { app as firebaseApp } from "@/firebase";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { app as firebaseApp, db as clientDb } from "@/firebase/index";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -67,27 +68,16 @@ export default function LoginForm() {
         throw new Error("Authentication succeeded but no user was found.");
       }
 
-      // 1. Create server-side session
+      // 1. Attempt to create server-side session (Non-blocking)
       const idToken = await firebaseUser.getIdToken();
       try {
-        const sessionResponse = await fetch('/api/auth/session-login', {
+        await fetch('/api/auth/session-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ idToken }),
         });
-        
-        if (!sessionResponse.ok) {
-            const errorData = await sessionResponse.json().catch(() => ({}));
-            // If the error is about missing environment variables, we log it but don't block the prototype UI
-            if (errorData.message?.includes('unavailable') || errorData.message?.includes('variables')) {
-                console.warn("Backend session cookie creation unavailable. Proceeding with client-side state only.");
-            } else {
-                throw new Error(errorData.message || "Failed to create a server-side session.");
-            }
-        }
       } catch (sessionErr) {
-        console.error("Session creation warning:", sessionErr);
-        // We continue because client-side auth is already complete
+        console.warn("Session creation skipped or failed. Proceeding with client state.");
       }
 
       // 2. Fetch Profile
@@ -115,14 +105,51 @@ export default function LoginForm() {
           throw new Error("Invalid role selection.");
       }
 
-      const profileRes = await fetch(profileApiUrl);
-
-      if (!profileRes.ok) {
-        const errorData = await profileRes.json().catch(() => ({ message: `Account profile not found for role '${role}'.` }));
-        throw new Error(errorData.message);
+      let firestoreProfile: any = null;
+      try {
+        const profileRes = await fetch(profileApiUrl);
+        
+        if (profileRes.ok) {
+          firestoreProfile = await profileRes.json();
+        } else {
+          const errorData = await profileRes.json().catch(() => ({}));
+          
+          // FALLBACK: If server-side DB is not initialized (missing Admin SDK env vars),
+          // try fetching the profile using the client-side SDK directly.
+          if (errorData.message?.includes('Database connection not initialized') || profileRes.status === 500) {
+            console.warn("Backend DB unavailable. Attempting client-side fallback for profile fetch.");
+            
+            const collectionMap = {
+              [USER_ROLES.STUDENT]: 'students',
+              [USER_ROLES.TEACHER]: 'teachers',
+              [USER_ROLES.ADMIN]: 'admins',
+              [USER_ROLES.HOST]: 'hosts',
+            };
+            const collectionName = collectionMap[role as keyof typeof collectionMap];
+            
+            // Try fetch by document ID (UID)
+            const docRef = doc(clientDb, collectionName, firebaseUser.uid);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+              firestoreProfile = { id: docSnap.id, ...docSnap.data() };
+            } else {
+              // Try query by email as backup
+              const q = query(collection(clientDb, collectionName), where("email", "==", firebaseUser.email));
+              const qSnap = await getDocs(q);
+              if (!qSnap.empty) {
+                firestoreProfile = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() };
+              }
+            }
+          }
+          
+          if (!firestoreProfile) {
+            throw new Error(errorData.message || `Account profile not found for role '${role}'.`);
+          }
+        }
+      } catch (profileErr: any) {
+        throw new Error(profileErr.message || "Failed to retrieve user profile.");
       }
-      
-      const firestoreProfile: Teacher | Admin | Host = await profileRes.json();
       
       if (firestoreProfile.status && firestoreProfile.status !== 'active') {
         const statusMessage = firestoreProfile.status.replace("_", " ");
