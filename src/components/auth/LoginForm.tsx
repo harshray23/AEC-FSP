@@ -24,7 +24,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
-import type { Host, Admin, Teacher } from "@/lib/types";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
 
 
@@ -68,7 +67,7 @@ export default function LoginForm() {
         throw new Error("Authentication succeeded but no user was found.");
       }
 
-      // 1. Attempt to create server-side session (Non-blocking)
+      // 1. Attempt to create server-side session (Non-blocking fallback)
       const idToken = await firebaseUser.getIdToken();
       try {
         await fetch('/api/auth/session-login', {
@@ -77,10 +76,10 @@ export default function LoginForm() {
           body: JSON.stringify({ idToken }),
         });
       } catch (sessionErr) {
-        console.warn("Session creation skipped or failed. Proceeding with client state.");
+        console.warn("Server-side session creation skipped. Proceeding with client-side state.");
       }
 
-      // 2. Fetch Profile
+      // 2. Fetch Profile with resilient fallback
       let profileApiUrl: string;
       let successRedirectPath: string;
 
@@ -106,52 +105,46 @@ export default function LoginForm() {
       }
 
       let firestoreProfile: any = null;
+      
+      // Try backend API first, fallback to client Firestore if it fails (likely due to unconfigured Admin SDK)
       try {
-        // Try the backend API first
         const profileRes = await fetch(profileApiUrl);
-        
         if (profileRes.ok) {
           firestoreProfile = await profileRes.json();
         } else {
-          // Fallback to client-side Firestore if the API fails
-          const collectionMap = {
-            [USER_ROLES.STUDENT]: 'students',
-            [USER_ROLES.TEACHER]: 'teachers',
-            [USER_ROLES.ADMIN]: 'admins',
-            [USER_ROLES.HOST]: 'hosts',
-          };
-          const collectionName = collectionMap[role as keyof typeof collectionMap];
-          
-          const docRef = doc(clientDb, collectionName, firebaseUser.uid);
-          const docSnap = await getDoc(docRef);
-          
-          if (docSnap.exists()) {
-            firestoreProfile = { id: docSnap.id, ...docSnap.data() };
-          } else {
-            // Backup: Try querying by email
-            const q = query(collection(clientDb, collectionName), where("email", "==", firebaseUser.email));
-            const qSnap = await getDocs(q);
-            if (!qSnap.empty) {
-              firestoreProfile = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() };
-            }
+          throw new Error("API unavailable");
+        }
+      } catch (apiErr) {
+        console.log("Backend profile API unavailable, falling back to client-side Firestore.");
+        const collectionMap = {
+          [USER_ROLES.STUDENT]: 'students',
+          [USER_ROLES.TEACHER]: 'teachers',
+          [USER_ROLES.ADMIN]: 'admins',
+          [USER_ROLES.HOST]: 'hosts',
+        };
+        const collectionName = collectionMap[role as keyof typeof collectionMap];
+        const docRef = doc(clientDb, collectionName, firebaseUser.uid);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          firestoreProfile = { id: docSnap.id, ...docSnap.data() };
+        } else {
+          // Final attempt: Search by email in the respective collection
+          const q = query(collection(clientDb, collectionName), where("email", "==", firebaseUser.email));
+          const qSnap = await getDocs(q);
+          if (!qSnap.empty) {
+            firestoreProfile = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() };
           }
         }
-      } catch (profileErr: any) {
-        console.error("Profile Fetch Error:", profileErr);
-        // If it's specifically an offline error, provide a helpful message
-        if (profileErr.message?.includes('offline')) {
-          throw new Error("Cloud connectivity issue: The Firestore client could not reach the server. Please check your project ID and network settings.");
-        }
-        throw new Error(profileErr.message || "Failed to retrieve your account profile.");
       }
       
       if (!firestoreProfile) {
-        throw new Error(`Profile not found for ${values.email} as ${role}. Please ensure you are logging in with the correct role.`);
+        throw new Error(`Profile not found for ${values.email} as ${role}. Please ensure your role selection is correct.`);
       }
 
       if (firestoreProfile.status && firestoreProfile.status !== 'active') {
         const statusMessage = firestoreProfile.status.replace("_", " ");
-        throw new Error(`Your account status is '${statusMessage}'. Login is currently disabled.`);
+        throw new Error(`Account status is '${statusMessage}'. Login is disabled.`);
       }
 
       const finalUserData = {
@@ -173,10 +166,10 @@ export default function LoginForm() {
       router.push(successRedirectPath);
 
     } catch (error: any) {
-      console.error("Login Error:", error);
+      console.error("Login process error:", error);
       toast({
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred. Please check your credentials and try again.",
+        description: error.message || "An unexpected error occurred. Please verify your credentials and try again.",
         variant: "destructive",
       });
     }
