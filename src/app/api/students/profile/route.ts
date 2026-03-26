@@ -19,42 +19,41 @@ export async function GET(req: NextRequest) {
     const studentsRef = db.collection('students');
     let studentDocSnapshot;
 
-    const uidQuerySnapshot = await studentsRef.where('uid', '==', studentIdentifier).limit(1).get();
-
-    if (!uidQuerySnapshot.empty) {
-      studentDocSnapshot = uidQuerySnapshot.docs[0];
+    // 1. Try fetching by document ID directly (most efficient if it's the UID)
+    const directDoc = await studentsRef.doc(studentIdentifier).get();
+    if (directDoc.exists) {
+        studentDocSnapshot = directDoc;
     } else {
-      const studentIdFieldQuerySnapshot = await studentsRef.where('studentId', '==', studentIdentifier).limit(1).get();
-      if (!studentIdFieldQuerySnapshot.empty) {
-        studentDocSnapshot = studentIdFieldQuerySnapshot.docs[0];
-      } else {
-        try {
-          const doc = await studentsRef.doc(studentIdentifier).get();
-          if (doc.exists) {
-            studentDocSnapshot = doc;
-          }
-        } catch (docIdError: any) {
-           console.warn(`Attempt to fetch by document ID '${studentIdentifier}' failed or was not valid. Error: ${ docIdError.message }`);
+        // 2. Try searching by 'uid' field
+        const uidQuerySnapshot = await studentsRef.where('uid', '==', studentIdentifier).limit(1).get();
+        if (!uidQuerySnapshot.empty) {
+            studentDocSnapshot = uidQuerySnapshot.docs[0];
+        } else {
+            // 3. Try searching by 'studentId' field (custom format like AEC/...)
+            const studentIdFieldQuerySnapshot = await studentsRef.where('studentId', '==', studentIdentifier).limit(1).get();
+            if (!studentIdFieldQuerySnapshot.empty) {
+                studentDocSnapshot = studentIdFieldQuerySnapshot.docs[0];
+            }
         }
-      }
     }
 
     if (!studentDocSnapshot || !studentDocSnapshot.exists) {
       return NextResponse.json({ message: `Student with identifier '${studentIdentifier}' not found.` }, { status: 404 });
     }
 
-    const studentData = { id: studentDocSnapshot.id, ...studentDocSnapshot.data() } as Student;
+    const data = studentDocSnapshot.data();
+    const studentData = { 
+        id: studentDocSnapshot.id, 
+        ...data,
+        // Ensure critical fields exist
+        role: data?.role || 'student',
+        status: data?.status || 'active'
+    } as Student;
 
     return NextResponse.json(studentData);
 
   } catch (error: any) {
     console.error('Firestore error fetching student profile:', error);
-    let errorMessage = 'Internal server error while fetching student profile.';
-    if (error.code) { 
-        errorMessage = `Firestore error (${error.code}): ${error.message}`;
-    } else if (error.message) {
-        errorMessage = error.message;
-    }
-    return NextResponse.json({ message: errorMessage }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'Internal server error while fetching student profile.' }, { status: 500 });
   }
 }

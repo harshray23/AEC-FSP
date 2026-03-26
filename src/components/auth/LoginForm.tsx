@@ -106,7 +106,6 @@ export default function LoginForm() {
 
       let firestoreProfile: any = null;
       
-      // Try backend API first, fallback to client Firestore if it fails (likely due to unconfigured Admin SDK)
       try {
         const profileRes = await fetch(profileApiUrl);
         if (profileRes.ok) {
@@ -129,7 +128,6 @@ export default function LoginForm() {
         if (docSnap.exists()) {
           firestoreProfile = { id: docSnap.id, ...docSnap.data() };
         } else {
-          // Final attempt: Search by email in the respective collection
           const q = query(collection(clientDb, collectionName), where("email", "==", firebaseUser.email));
           const qSnap = await getDocs(q);
           if (!qSnap.empty) {
@@ -142,7 +140,12 @@ export default function LoginForm() {
         throw new Error(`Profile not found for ${values.email} as ${role}. Please ensure your role selection is correct.`);
       }
 
-      if (firestoreProfile.status && firestoreProfile.status !== 'active') {
+      // Ensure critical fields exist even if database record is incomplete
+      if (!firestoreProfile.role) firestoreProfile.role = role;
+      if (!firestoreProfile.status) firestoreProfile.status = 'active';
+      if (!firestoreProfile.name) firestoreProfile.name = firebaseUser.displayName || values.email.split('@')[0];
+
+      if (firestoreProfile.status !== 'active') {
         const statusMessage = firestoreProfile.status.replace("_", " ");
         throw new Error(`Account status is '${statusMessage}'. Login is disabled.`);
       }

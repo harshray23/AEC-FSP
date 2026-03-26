@@ -15,7 +15,6 @@ interface GuestUser {
   role: 'guest';
 }
 
-// A comprehensive type for the current user, covering all possible roles and properties.
 type CurrentUserType = Student | Teacher | Admin | Host | GuestUser;
 
 
@@ -101,8 +100,6 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
 };
 
 const getServerSideUser = (pathname: string): CurrentUserType => {
-  // This function ONLY contains server-safe logic (path-based determination)
-  // and is used for the initial render on both server and client to avoid hydration mismatch.
   if (pathname.startsWith("/admin")) {
     return { id: "server-admin-fallback", name: "Admin", email: "admin@example.com", role: USER_ROLES.ADMIN, status: "active", username: "server_admin_fallback" };
   } else if (pathname.startsWith("/teacher")) {
@@ -127,36 +124,38 @@ export default function AppPagesLayout({
 }) {
   const pathname = usePathname();
   
-  // Initialize state with a server-side determined user. This prevents hydration mismatch.
   const [currentUser, setCurrentUser] = useState<CurrentUserType>(() => getServerSideUser(pathname)); 
 
   useEffect(() => {
-    // This effect runs only on the client, after the initial render.
     const storedUserString = localStorage.getItem("currentUser");
     if (storedUserString) {
       try {
         const storedUser = JSON.parse(storedUserString);
-        // More robust check to prevent crashes from corrupted localStorage data
-        if (storedUser && storedUser.id && storedUser.role && storedUser.name && storedUser.email) {
-          // Safely update the state on the client after hydration.
+        // Made the check more flexible: only ID and Email are strictly required for recovery
+        if (storedUser && storedUser.id && storedUser.email) {
+          // If role is missing, we try to infer it from the path as a last resort
+          if (!storedUser.role) {
+             const pathRole = pathname.split('/')[1] as any;
+             if (Object.values(USER_ROLES).includes(pathRole)) {
+                 storedUser.role = pathRole;
+             } else {
+                 storedUser.role = 'guest';
+             }
+          }
           setCurrentUser(storedUser);
-        } else {
-            // Clear corrupted or incomplete data
-            localStorage.removeItem("currentUser");
         }
       } catch (e) {
         console.error("Error parsing currentUser from localStorage:", e);
-        localStorage.removeItem("currentUser"); // Clear corrupted data
       }
     }
-  }, [pathname]); // Re-run if path changes to support client-side navigation.
+  }, [pathname]);
 
   let displayUserRole = currentUser.role === 'guest' ? 'Guest' : currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
   if (currentUser.role === USER_ROLES.HOST) {
     displayUserRole = "Management";
   }
   
-  const navItems = getNavItems(currentUser.role);
+  const navItems = getNavItems(currentUser.role as any);
 
 
   return (
