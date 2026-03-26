@@ -7,7 +7,8 @@ import * as z from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
-import { app as firebaseApp } from "@/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { app as firebaseApp, db as clientDb } from "@/firebase/index";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -50,19 +51,51 @@ export default function ForgotPasswordForm() {
     }
 
     try {
-      // Step 1: Pre-flight check with our backend API to ensure the user exists for the given role.
-      const preCheckResponse = await fetch('/api/auth/request-password-reset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: values.email, role: role }),
-      });
+      // Step 1: Pre-flight check with our backend API
+      let isVerified = false;
+      try {
+        const preCheckResponse = await fetch('/api/auth/request-password-reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: values.email, role: role }),
+        });
 
-      if (!preCheckResponse.ok) {
-          const errorData = await preCheckResponse.json().catch(() => ({ message: 'Could not verify your email for the selected role.'}));
-          throw new Error(errorData.message);
+        if (preCheckResponse.ok) {
+            isVerified = true;
+        } else {
+            const errorData = await preCheckResponse.json().catch(() => ({ message: 'Verification failed' }));
+            // If the error is specifically about database initialization, we fall back to client-side check
+            if (errorData.message?.includes("Database not initialized") || preCheckResponse.status === 500) {
+                throw new Error("BACKEND_UNAVAILABLE");
+            } else {
+                throw new Error(errorData.message || 'Could not verify your email for the selected role.');
+            }
+        }
+      } catch (backendError: any) {
+        if (backendError.message === "BACKEND_UNAVAILABLE") {
+            // Fallback to client-side check
+            const collectionMap = {
+                [USER_ROLES.STUDENT]: 'students',
+                [USER_ROLES.TEACHER]: 'teachers',
+                [USER_ROLES.ADMIN]: 'admins',
+                [USER_ROLES.HOST]: 'hosts',
+            };
+            const collectionName = collectionMap[role];
+            const q = query(collection(clientDb, collectionName), where("email", "==", values.email.toLowerCase()));
+            const qSnap = await getDocs(q);
+            
+            if (qSnap.empty) {
+                throw new Error(`No ${role} account found with that email address.`);
+            }
+            isVerified = true;
+        } else {
+            throw backendError;
+        }
       }
 
-      // Step 2: If the pre-flight check is successful, send the actual Firebase password reset email.
+      if (!isVerified) return;
+
+      // Step 2: Send the actual Firebase password reset email.
       await sendPasswordResetEmail(auth, values.email);
       
       toast({
@@ -70,7 +103,6 @@ export default function ForgotPasswordForm() {
         description: `If an account exists for ${values.email} as a ${role}, you will receive an email with instructions to reset your password.`,
       });
 
-      // Optionally, redirect the user after sending the email
       router.push(`/login?role=${role}`);
 
     } catch (error: any) {
