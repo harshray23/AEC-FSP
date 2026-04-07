@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserCircle, Edit3, Mail, Phone, Building, ImagePlus, BadgePercent, Briefcase, Loader2 } from "lucide-react";
+import { UserCircle, Edit3, Mail, Phone, Building, ImagePlus, BadgePercent, Briefcase, Loader2, CheckCircle2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, DEPARTMENTS } from "@/lib/constants";
@@ -16,7 +16,8 @@ import type { Teacher } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import TeacherEditProfileForm, { type EditTeacherProfileFormValues } from "@/components/teacher/TeacherEditProfileForm";
-import { ChangePasswordDialog } from "@/components/shared/ChangePasswordDialog"; // Added import
+import { ChangePasswordDialog } from "@/components/shared/ChangePasswordDialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function TeacherProfilePage() {
   const [teacherProfile, setTeacherProfile] = useState<Teacher | null>(null);
@@ -24,7 +25,7 @@ export default function TeacherProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false); // Added state
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -188,6 +189,16 @@ export default function TeacherProfilePage() {
               </Avatar>
               <CardTitle className="text-2xl">{teacherProfile.name || "N/A"}</CardTitle>
               <CardDescription>{teacherProfile.email || "N/A"}</CardDescription>
+              <div className="mt-4 flex gap-2 justify-center">
+                <Badge variant={teacherProfile.status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                  Status: {teacherProfile.status?.replace('_', ' ') || 'Active'}
+                </Badge>
+                {teacherProfile.status === 'active' && (
+                  <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
+                    <CheckCircle2 className="w-3 h-3 mr-1" /> Active Account
+                  </Badge>
+                )}
+              </div>
               {teacherProfile.username && (
                 <CardDescription className="text-sm mt-1">Username: <span className="font-semibold text-primary">@{teacherProfile.username}</span></CardDescription>
               )}
@@ -219,7 +230,7 @@ export default function TeacherProfilePage() {
                 </div>
                 <div>
                   <Label htmlFor="status" className="flex items-center text-muted-foreground"><Briefcase className="mr-2 h-4 w-4" />Account Status</Label>
-                  <Input id="status" value={teacherProfile.status || "N/A"} readOnly className="mt-1 bg-muted/30 capitalize" />
+                  <Input id="status" value={teacherProfile.status?.replace('_', ' ') || "N/A"} readOnly className="mt-1 bg-muted/30 capitalize" />
                 </div>
               </div>
               

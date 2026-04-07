@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react"; 
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { app as firebaseApp, db as clientDb } from "@/firebase/index";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
+import { Badge } from "../ui/badge";
+import { Wifi, WifiOff } from "lucide-react";
 
 
 const loginFormSchema = z.object({
@@ -41,6 +43,7 @@ export default function LoginForm() {
   const role = searchParams.get("role") as UserRole | null;
   const auth = getAuth(firebaseApp);
   const [isLoginSuccess, setIsLoginSuccess] = useState(false);
+  const [isOnline, setIsOnline] = useState<boolean | null>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -51,6 +54,13 @@ export default function LoginForm() {
     if (typeof window !== 'undefined' && (!role || !Object.values(USER_ROLES).includes(role))) {
       router.push('/');
     }
+    
+    // Check Firestore Connectivity (Workstation Test)
+    const unsubscribe = onSnapshot(doc(clientDb, ".info/connected"), (snapshot) => {
+      setIsOnline(!!snapshot.data()?.connected);
+    });
+    
+    return () => unsubscribe();
   }, [role, router]);
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -76,7 +86,7 @@ export default function LoginForm() {
           body: JSON.stringify({ idToken }),
         });
       } catch (sessionErr) {
-        console.warn("Server-side session creation skipped. Proceeding with client-side state.");
+        console.warn("Server-side session creation skipped.");
       }
 
       // 2. Fetch Profile with resilient fallback
@@ -114,7 +124,6 @@ export default function LoginForm() {
           throw new Error("API unavailable");
         }
       } catch (apiErr) {
-        console.log("Backend profile API unavailable, falling back to client-side Firestore.");
         const collectionMap = {
           [USER_ROLES.STUDENT]: 'students',
           [USER_ROLES.TEACHER]: 'teachers',
@@ -137,10 +146,10 @@ export default function LoginForm() {
       }
       
       if (!firestoreProfile) {
-        throw new Error(`Profile not found for ${values.email} as ${role}. Please ensure your role selection is correct.`);
+        throw new Error(`Profile not found for ${values.email} as ${role}.`);
       }
 
-      // Ensure critical fields exist even if database record is incomplete
+      // Ensure critical fields exist
       if (!firestoreProfile.role) firestoreProfile.role = role;
       if (!firestoreProfile.status) firestoreProfile.status = 'active';
       if (!firestoreProfile.name) firestoreProfile.name = firebaseUser.displayName || values.email.split('@')[0];
@@ -172,7 +181,7 @@ export default function LoginForm() {
       console.error("Login process error:", error);
       toast({
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred. Please verify your credentials and try again.",
+        description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       });
     }
@@ -206,6 +215,19 @@ export default function LoginForm() {
         <CardDescription className="text-center">
           Enter your email and password to access your account.
         </CardDescription>
+        <div className="flex justify-center pt-2">
+          {isOnline === null ? (
+            <Badge variant="outline" className="animate-pulse">Checking Connection...</Badge>
+          ) : isOnline ? (
+            <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
+              <Wifi className="w-3 h-3 mr-1" /> Connected
+            </Badge>
+          ) : (
+            <Badge variant="destructive" className="animate-bounce">
+              <WifiOff className="w-3 h-3 mr-1" /> Client is Offline
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <Form {...form}>

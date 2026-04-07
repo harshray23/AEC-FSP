@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -8,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList, Loader2, BookCopy, MapPin, User, HeartPulse, School, Calendar } from "lucide-react";
+import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList, Loader2, BookCopy, MapPin, User, HeartPulse, School, Calendar, CheckCircle2 } from "lucide-react";
 import type { Student, AcademicDetails } from "@/lib/types";
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +20,7 @@ import AcademicDetailsForm, { type AcademicFormValues } from "@/components/stude
 import StudentEditProfileForm, { type EditStudentProfileFormValues } from "@/components/student/StudentEditProfileForm";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 export default function StudentProfilePage() {
   const [studentProfile, setStudentProfile] = useState<Partial<Student>>({});
@@ -126,7 +126,7 @@ export default function StudentProfilePage() {
         if (!response.ok) {
             throw new Error(result.message || "Failed to save academic details.");
         }
-        setStudentProfile(result.student); // Update state with the full updated student object from API
+        setStudentProfile(result.student); 
         toast({ title: "Success", description: "Academic details saved successfully." });
         setIsAcademicDialogOpen(false);
     } catch (error: any) {
@@ -244,6 +244,16 @@ export default function StudentProfilePage() {
               </Avatar>
               <CardTitle className="text-2xl">{studentProfile.name || "N/A"}</CardTitle>
               <CardDescription>{studentProfile.studentId || "N/A"}</CardDescription>
+              <div className="mt-4 flex gap-2">
+                <Badge variant={studentProfile.status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                  Status: {studentProfile.status || 'Active'}
+                </Badge>
+                {studentProfile.isEmailVerified && (
+                  <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
+                    <CheckCircle2 className="w-3 h-3 mr-1" /> Email Verified
+                  </Badge>
+                )}
+              </div>
               <Button variant="outline" className="mt-4" disabled>
                 <ImagePlus className="mr-2 h-4 w-4" /> Change Photo (Not Implemented)
               </Button>
@@ -279,12 +289,8 @@ export default function StudentProfilePage() {
                   <Input id="regNumber" value={studentProfile.registrationNumber || "N/A"} readOnly className="mt-1 bg-muted/30" />
                 </div>
                  <div>
-                  <Label htmlFor="emailVerified" className="flex items-center text-muted-foreground"><Mail className="mr-2 h-4 w-4" />Email Verified</Label>
-                  <Input id="emailVerified" value={studentProfile.isEmailVerified ? "Yes" : "No"} readOnly className="mt-1 bg-muted/30" />
-                </div>
-                 <div>
-                  <Label htmlFor="phoneVerified" className="flex items-center text-muted-foreground"><Phone className="mr-2 h-4 w-4" />Phone Verified</Label>
-                  <Input id="phoneVerified" value={studentProfile.isPhoneVerified ? "Yes" : "No"} readOnly className="mt-1 bg-muted/30" />
+                  <Label htmlFor="accountStatus" className="flex items-center text-muted-foreground"><User className="mr-2 h-4 w-4" />Client Side Status</Label>
+                  <Input id="accountStatus" value={studentProfile.status === 'active' ? 'Active' : 'Inactive'} readOnly className="mt-1 bg-muted/30 capitalize" />
                 </div>
               </div>
 
@@ -425,4 +431,3 @@ export default function StudentProfilePage() {
     </div>
   );
 }
-

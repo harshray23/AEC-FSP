@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserCircle, Mail, Shield, Loader2, Edit3, Phone } from "lucide-react"; 
+import { UserCircle, Mail, Shield, Loader2, Edit3, Phone, CheckCircle2 } from "lucide-react"; 
 import type { Host } from "@/lib/types";
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChangePasswordDialog } from "@/components/shared/ChangePasswordDialog";
 import HostEditProfileForm, { type EditHostProfileFormValues } from "@/components/host/HostEditProfileForm";
+import { Badge } from "@/components/ui/badge";
 
 export default function HostProfilePage() {
   const [hostProfile, setHostProfile] = useState<Host | null>(null);
@@ -183,6 +184,16 @@ export default function HostProfilePage() {
                 </Avatar>
                 <CardTitle className="text-2xl">{hostProfile.name || "N/A"}</CardTitle>
                 <CardDescription>{hostProfile.email || "N/A"} ({hostProfile.role || "N/A"})</CardDescription>
+                <div className="mt-4 flex gap-2 justify-center">
+                  <Badge variant={hostProfile.status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                    Status: {hostProfile.status?.replace('_', ' ') || 'Active'}
+                  </Badge>
+                  {hostProfile.status === 'active' && (
+                    <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
+                      <CheckCircle2 className="w-3 h-3 mr-1" /> Management Access
+                    </Badge>
+                  )}
+                </div>
             </CardHeader>
             <CardContent className="p-0 pt-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -204,7 +215,7 @@ export default function HostProfilePage() {
                 </div>
                 <div>
                     <Label htmlFor="status" className="flex items-center text-muted-foreground"><Shield className="mr-2 h-4 w-4" />Account Status</Label>
-                    <Input id="status" value={hostProfile.status || "N/A"} readOnly className="mt-1 bg-muted/30 capitalize" />
+                    <Input id="status" value={hostProfile.status?.replace('_', ' ') || "N/A"} readOnly className="mt-1 bg-muted/30 capitalize" />
                 </div>
                 </div>
                 

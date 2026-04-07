@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserCircle, Edit3, Mail, Phone, Shield, ImagePlus, BadgePercent, Loader2 } from "lucide-react"; 
+import { UserCircle, Edit3, Mail, Phone, Shield, ImagePlus, BadgePercent, Loader2, CheckCircle2 } from "lucide-react"; 
 import type { Admin } from "@/lib/types";
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AdminEditProfileForm, { type EditAdminProfileFormValues } from "@/components/admin/AdminEditProfileForm";
 import { ChangePasswordDialog } from "@/components/shared/ChangePasswordDialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function AdminProfilePage() {
   const [adminProfile, setAdminProfile] = useState<Admin | null>(null);
@@ -73,7 +74,7 @@ export default function AdminProfilePage() {
 
   useEffect(() => {
     fetchProfile();
-  }, [router, toast]); // Initial fetch
+  }, [router, toast]); 
 
   const handleSaveProfile = async (values: EditAdminProfileFormValues) => {
     if (!adminProfile) return;
@@ -90,8 +91,8 @@ export default function AdminProfilePage() {
         throw new Error(errorData.message);
       }
       const updatedAdmin = await response.json();
-      setAdminProfile(updatedAdmin.admin); // Assuming API returns the updated admin object under 'admin' key
-      localStorage.setItem("currentUser", JSON.stringify(updatedAdmin.admin)); // Update localStorage
+      setAdminProfile(updatedAdmin.admin); 
+      localStorage.setItem("currentUser", JSON.stringify(updatedAdmin.admin)); 
 
       toast({ title: "Profile Updated", description: "Your profile has been successfully updated." });
       setIsEditing(false);
@@ -140,7 +141,6 @@ export default function AdminProfilePage() {
   }
   
   if (!adminProfile) {
-    // Should be caught by error state or loading state, but as a fallback
     return (
       <div className="space-y-8">
         <PageHeader title="Profile Not Found" icon={UserCircle} />
@@ -184,6 +184,16 @@ export default function AdminProfilePage() {
               </Avatar>
               <CardTitle className="text-2xl">{adminProfile.name || "N/A"}</CardTitle>
               <CardDescription>{adminProfile.email || "N/A"} ({adminProfile.role || "N/A"})</CardDescription>
+              <div className="mt-4 flex gap-2 justify-center">
+                <Badge variant={adminProfile.status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                  Status: {adminProfile.status?.replace('_', ' ') || 'Active'}
+                </Badge>
+                {adminProfile.status === 'active' && (
+                  <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
+                    <CheckCircle2 className="w-3 h-3 mr-1" /> Active Account
+                  </Badge>
+                )}
+              </div>
               {adminProfile.username && (
                 <CardDescription className="text-sm mt-1">Username: <span className="font-semibold text-primary">@{adminProfile.username}</span></CardDescription>
               )}
@@ -215,7 +225,7 @@ export default function AdminProfilePage() {
                 </div>
                 <div>
                   <Label htmlFor="status" className="flex items-center text-muted-foreground"><Shield className="mr-2 h-4 w-4" />Account Status</Label>
-                  <Input id="status" value={adminProfile.status || "N/A"} readOnly className="mt-1 bg-muted/30 capitalize" />
+                  <Input id="status" value={adminProfile.status?.replace('_', ' ') || "N/A"} readOnly className="mt-1 bg-muted/30 capitalize" />
                 </div>
               </div>
               
