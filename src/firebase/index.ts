@@ -1,6 +1,6 @@
 
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { initializeFirestore } from "firebase/firestore";
+import { initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { firebaseConfig } from "./config";
 
@@ -8,12 +8,13 @@ import { firebaseConfig } from "./config";
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 /**
- * Initialize Firestore with specific settings.
- * experimentalForceLongPolling: true is critical for avoiding "client is offline" 
- * errors in restricted network environments like Cloud Workstations or behind certain proxies.
+ * Initialize Firestore with specific settings for Cloud Workstation compatibility.
+ * experimentalForceLongPolling: true is critical for avoiding connection issues in 
+ * restricted network environments.
  */
 const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
+  experimentalAutoDetectLongPolling: true,
 });
 
 const auth = getAuth(app);

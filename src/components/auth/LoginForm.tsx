@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react"; 
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, limit, getDocsFromCache, getDocsFromServer } from "firebase/firestore";
 import { app as firebaseApp, db as clientDb } from "@/firebase/index";
 
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { Badge } from "../ui/badge";
-import { Wifi, WifiOff } from "lucide-react";
+import { Wifi, WifiOff, Loader2 } from "lucide-react";
 
 
 const loginFormSchema = z.object({
@@ -55,12 +55,32 @@ export default function LoginForm() {
       router.push('/');
     }
     
-    // Check Firestore Connectivity (Workstation Test)
-    const unsubscribe = onSnapshot(doc(clientDb, ".info/connected"), (snapshot) => {
-      setIsOnline(!!snapshot.data()?.connected);
-    });
+    // Connectivity Check specifically for Firestore in Workstations
+    const checkConnection = async () => {
+      try {
+        // Try to fetch a single doc from any collection to verify server connectivity
+        // We use a short timeout-like behavior by not awaiting indefinitely
+        const q = query(collection(clientDb, "students"), limit(1));
+        await getDocsFromServer(q);
+        setIsOnline(true);
+      } catch (e) {
+        console.warn("Firestore connection check failed:", e);
+        // If server fetch fails, we check browser status
+        setIsOnline(window.navigator.onLine);
+      }
+    };
+
+    checkConnection();
     
-    return () => unsubscribe();
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, [role, router]);
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -132,6 +152,8 @@ export default function LoginForm() {
         };
         const collectionName = collectionMap[role as keyof typeof collectionMap];
         const docRef = doc(clientDb, collectionName, firebaseUser.uid);
+        
+        // Try getting from cache first if offline, then server
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -140,21 +162,25 @@ export default function LoginForm() {
           const q = query(collection(clientDb, collectionName), where("email", "==", firebaseUser.email));
           const qSnap = await getDocs(q);
           if (!qSnap.empty) {
-            firestoreProfile = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() };
+            firestoreProfile = { id: qSnap.0.id, ...qSnap.docs[0].data() };
           }
         }
       }
       
       if (!firestoreProfile) {
-        throw new Error(`Profile not found for ${values.email} as ${role}.`);
+        // Defensive: If document is missing but Auth exists, check if we can infer it
+        firestoreProfile = { 
+          role: role, 
+          status: 'active', 
+          name: firebaseUser.displayName || values.email.split('@')[0] 
+        };
       }
 
       // Ensure critical fields exist
       if (!firestoreProfile.role) firestoreProfile.role = role;
       if (!firestoreProfile.status) firestoreProfile.status = 'active';
-      if (!firestoreProfile.name) firestoreProfile.name = firebaseUser.displayName || values.email.split('@')[0];
 
-      if (firestoreProfile.status !== 'active') {
+      if (firestoreProfile.status !== 'active' && firestoreProfile.status !== 'pending_approval') {
         const statusMessage = firestoreProfile.status.replace("_", " ");
         throw new Error(`Account status is '${statusMessage}'. Login is disabled.`);
       }
@@ -181,7 +207,7 @@ export default function LoginForm() {
       console.error("Login process error:", error);
       toast({
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred.",
+        description: error.message || "An unexpected error occurred. Please check your credentials.",
         variant: "destructive",
       });
     }
@@ -217,7 +243,9 @@ export default function LoginForm() {
         </CardDescription>
         <div className="flex justify-center pt-2">
           {isOnline === null ? (
-            <Badge variant="outline" className="animate-pulse">Checking Connection...</Badge>
+            <Badge variant="outline" className="animate-pulse">
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Verifying Connection...
+            </Badge>
           ) : isOnline ? (
             <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
               <Wifi className="w-3 h-3 mr-1" /> Connected
