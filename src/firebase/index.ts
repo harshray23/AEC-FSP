@@ -10,11 +10,11 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 /**
  * Initialize Firestore with specific settings for Cloud Workstation compatibility.
  * experimentalForceLongPolling: true is critical for avoiding connection issues in 
- * restricted network environments.
+ * restricted network environments. 
+ * Note: Cannot be used with experimentalAutoDetectLongPolling.
  */
 const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
-  experimentalAutoDetectLongPolling: true,
 });
 
 const auth = getAuth(app);
