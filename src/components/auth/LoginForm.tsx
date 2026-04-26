@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,6 +44,14 @@ export default function LoginForm() {
   const [isLoginSuccess, setIsLoginSuccess] = useState(false);
   const [isOnline, setIsOnline] = useState<boolean | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (!role || !Object.values(USER_ROLES).includes(role))) {
