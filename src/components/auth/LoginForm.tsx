@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react"; 
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs, limit, getDocsFromCache, getDocsFromServer } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, limit, getDocsFromServer } from "firebase/firestore";
 import { app as firebaseApp, db as clientDb } from "@/firebase/index";
 
 import { Button } from "@/components/ui/button";
@@ -58,14 +58,11 @@ export default function LoginForm() {
     // Connectivity Check specifically for Firestore in Workstations
     const checkConnection = async () => {
       try {
-        // Try to fetch a single doc from any collection to verify server connectivity
-        // We use a short timeout-like behavior by not awaiting indefinitely
         const q = query(collection(clientDb, "students"), limit(1));
         await getDocsFromServer(q);
         setIsOnline(true);
       } catch (e) {
         console.warn("Firestore connection check failed:", e);
-        // If server fetch fails, we check browser status
         setIsOnline(window.navigator.onLine);
       }
     };
@@ -153,7 +150,6 @@ export default function LoginForm() {
         const collectionName = collectionMap[role as keyof typeof collectionMap];
         const docRef = doc(clientDb, collectionName, firebaseUser.uid);
         
-        // Try getting from cache first if offline, then server
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -162,13 +158,12 @@ export default function LoginForm() {
           const q = query(collection(clientDb, collectionName), where("email", "==", firebaseUser.email));
           const qSnap = await getDocs(q);
           if (!qSnap.empty) {
-            firestoreProfile = { id: qSnap.0.id, ...qSnap.docs[0].data() };
+            firestoreProfile = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() };
           }
         }
       }
       
       if (!firestoreProfile) {
-        // Defensive: If document is missing but Auth exists, check if we can infer it
         firestoreProfile = { 
           role: role, 
           status: 'active', 
@@ -176,7 +171,6 @@ export default function LoginForm() {
         };
       }
 
-      // Ensure critical fields exist
       if (!firestoreProfile.role) firestoreProfile.role = role;
       if (!firestoreProfile.status) firestoreProfile.status = 'active';
 
