@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { Badge } from "../ui/badge";
-import { Wifi, WifiOff, Loader2 } from "lucide-react";
+import { Wifi, WifiOff, Loader2, Eye, EyeOff } from "lucide-react";
 
 
 const loginFormSchema = z.object({
@@ -44,18 +44,13 @@ export default function LoginForm() {
   const auth = getAuth(firebaseApp);
   const [isLoginSuccess, setIsLoginSuccess] = useState(false);
   const [isOnline, setIsOnline] = useState<boolean | null>(null);
-
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginFormSchema),
-    defaultValues: { email: "", password: "" },
-  });
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (!role || !Object.values(USER_ROLES).includes(role))) {
       router.push('/');
     }
     
-    // Connectivity Check specifically for Firestore in Workstations
     const checkConnection = async () => {
       try {
         const q = query(collection(clientDb, "students"), limit(1));
@@ -94,7 +89,6 @@ export default function LoginForm() {
         throw new Error("Authentication succeeded but no user was found.");
       }
 
-      // 1. Attempt to create server-side session (Non-blocking fallback)
       const idToken = await firebaseUser.getIdToken();
       try {
         await fetch('/api/auth/session-login', {
@@ -106,7 +100,6 @@ export default function LoginForm() {
         console.warn("Server-side session creation skipped.");
       }
 
-      // 2. Fetch Profile with resilient fallback
       let profileApiUrl: string;
       let successRedirectPath: string;
 
@@ -274,7 +267,20 @@ export default function LoginForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Enter your password" {...field} />
+                    <div className="relative">
+                      <Input 
+                        type={showPassword ? "text" : "password"} 
+                        placeholder="Enter your password" 
+                        {...field} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
