@@ -1,6 +1,7 @@
+'use client';
 
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { firebaseConfig } from "./config";
 
@@ -11,7 +12,6 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
  * Initialize Firestore with specific settings for Cloud Workstation compatibility.
  * experimentalForceLongPolling: true is critical for avoiding connection issues in 
  * restricted network environments. 
- * Note: Cannot be used with experimentalAutoDetectLongPolling.
  */
 const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
